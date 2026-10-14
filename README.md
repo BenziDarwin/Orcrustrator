@@ -1,6 +1,6 @@
-# Orcrustrator 🦀
+# Orcrustrator
 
-[![Crates.io](https://img.shields.io/badge/crates.io-v0.1.0-orange.svg)](https://crates.io/crates/orcrustrator)
+[![Crates.io](https://img.shields.io/badge/crates.io-v0.1.1-orange.svg)](https://crates.io/crates/orcrustrator)
 [![Documentation](https://docs.rs/orcrustrator/badge.svg)](https://docs.rs/orcrustrator)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
@@ -12,18 +12,18 @@ Orcrustrator is dedicated entirely to **runtime data orchestration**—with zero
 
 ## Features
 
-- 🔐 **Multi-Auth Engine**: First-class support for Basic Auth, Bearer Token, API Key (Header/Query), OAuth 1.0a (HMAC-SHA1), and in-memory volatile OAuth 2.0 with automatic token caching and renewal.
-- 🔍 **Dynamic Format & Schema Inspection**: Sniffs `Content-Type` and raw payloads for JSON, XML, or plain text, normalizing them into a unified AST (`StructuredValue`) with live schema type inference.
-- 🌳 **Relational Endpoint Orchestration**:
+- **Multi-Auth Engine**: First-class support for Basic Auth, Bearer Token, API Key (Header/Query), OAuth 1.0a (HMAC-SHA1), and in-memory volatile OAuth 2.0 with automatic token caching and renewal.
+- **Dynamic Format & Schema Inspection**: Sniffs `Content-Type` and raw payloads for JSON, XML, or plain text, normalizing them into a unified AST (`StructuredValue`) with live schema type inference.
+- **Relational Endpoint Orchestration**:
   - `HasOne` (1:1): Dynamic dependent fetching where parent attributes parameterize child requests.
   - `HasMany` (1:N): Resolves child lists or multiple entity references into nested child collections.
   - `IndependentJoin`: Concurrent fan-out retrieval stitched in RAM based on matching keys.
-- ⚡ **Fearless Concurrency & DAG Execution**: Independent root queries and child fan-out requests execute concurrently across Tokio tasks, bounding latency to the slowest single endpoint.
-- 🔄 **Full HTTP Lifecycle (GET, POST, PUT, PATCH, DELETE)**:
+- **Fearless Concurrency & DAG Execution**: Independent root queries and child fan-out requests execute concurrently across Tokio tasks, bounding latency to the slowest single endpoint.
+- **Full HTTP Lifecycle (GET, POST, PUT, PATCH, DELETE)**:
   - Sequential and parallel mutation pipelines with input payload mapping and parameter forwarding between steps.
   - Compensating rollback actions (Saga pattern) for automatic cleanup on failure.
-- 💾 **Pluggable Storage Extensibility**: Includes the `DataSink` trait and universal Serde `Serialize`/`Deserialize` support with `.into_typed::<T>()` so users can easily persist outputs to PostgreSQL, SQLite, Redis, S3, or MongoDB.
-- 📦 **Crate-Friendly & Lightweight**: Pure library-first design with modular Cargo feature flags.
+- **Pluggable Storage Extensibility**: Includes the `DataSink` trait and universal Serde `Serialize`/`Deserialize` support with `.into_typed::<T>()` so users can easily persist outputs to PostgreSQL, SQLite, Redis, S3, or MongoDB.
+- **Crate-Friendly & Lightweight**: Pure library-first design with modular Cargo feature flags.
 
 ---
 
@@ -33,7 +33,7 @@ Add Orcrustrator to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-orcrustrator = "0.1.0"
+orcrustrator = "0.1.1"
 ```
 
 ### Feature Flags
