@@ -18,14 +18,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Upgrade npm to latest for Trusted Publishing
-        run: sudo npm install -g npm@latest
 
       - name: Install dependencies and build
         working-directory: ui
@@ -35,4 +32,4 @@ jobs:
 
       - name: Publish to npm registry via OIDC
         working-directory: ui
-        run: npm publish --provenance --access public
+        run: npx npm@latest publish --provenance --access public
