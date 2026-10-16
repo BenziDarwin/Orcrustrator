@@ -69,9 +69,20 @@ const server = http.createServer((req, res) => {
   if (pathname === '/api/workspace' && req.method === 'GET') {
     const defPath = path.join(ORCRUSTRATOR_DIR, 'definitions.toml');
     const ovrPath = path.join(ORCRUSTRATOR_DIR, 'overrides.toml');
+    const layoutPath = path.join(ORCRUSTRATOR_DIR, 'layout.json');
+    const cargoPath = path.join(PROJECT_DIR, 'Cargo.toml');
 
     const definitions = fs.existsSync(defPath) ? fs.readFileSync(defPath, 'utf8') : null;
     const overrides = fs.existsSync(ovrPath) ? fs.readFileSync(ovrPath, 'utf8') : null;
+    let layout = null;
+    if (fs.existsSync(layoutPath)) {
+      try {
+        layout = JSON.parse(fs.readFileSync(layoutPath, 'utf8'));
+      } catch {
+        layout = null;
+      }
+    }
+    const isRustProject = fs.existsSync(cargoPath);
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(
@@ -79,10 +90,40 @@ const server = http.createServer((req, res) => {
         projectDir: PROJECT_DIR,
         hasDefinitions: definitions !== null,
         hasOverrides: overrides !== null,
+        isRustProject,
         definitions,
         overrides,
+        layout,
+        warning:
+          definitions === null
+            ? `No orcrustrator/definitions.toml found in ${PROJECT_DIR}. Run "orcrustrator compile" to scan relations from your code.`
+            : null,
       })
     );
+    return;
+  }
+
+  // API Route: Save layout.json
+  if (pathname === '/api/layout' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+    });
+    req.on('end', () => {
+      try {
+        if (!fs.existsSync(ORCRUSTRATOR_DIR)) {
+          fs.mkdirSync(ORCRUSTRATOR_DIR, { recursive: true });
+        }
+        const layoutPath = path.join(ORCRUSTRATOR_DIR, 'layout.json');
+        fs.writeFileSync(layoutPath, body, 'utf8');
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, path: layoutPath }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    });
     return;
   }
 
@@ -94,7 +135,6 @@ const server = http.createServer((req, res) => {
     });
     req.on('end', () => {
       try {
-        const data = JSON.parse(body);
         if (!fs.existsSync(ORCRUSTRATOR_DIR)) {
           fs.mkdirSync(ORCRUSTRATOR_DIR, { recursive: true });
         }
@@ -111,15 +151,67 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+// Helper to find the orcrustrator CLI binary across PATH, cargo bin, and local target dirs
+function findOrcrustratorBinary() {
+  const isWin = process.platform === 'win32';
+  const binName = isWin ? 'orcrustrator.exe' : 'orcrustrator';
+
+  // 1. Check user cargo bin
+  const homeDir = process.env.USERPROFILE || process.env.HOME || '';
+  if (homeDir) {
+    const cargoBin = path.join(homeDir, '.cargo', 'bin', binName);
+    if (fs.existsSync(cargoBin)) {
+      return `"${cargoBin}"`;
+    }
+  }
+
+  // 2. Check local repo build targets
+  const candidateDirs = [
+    path.resolve(__dirname, '../../target/release'),
+    path.resolve(__dirname, '../../target/debug'),
+    path.resolve(PROJECT_DIR, 'target/release'),
+    path.resolve(PROJECT_DIR, 'target/debug'),
+    path.resolve(PROJECT_DIR, '../target/release'),
+    path.resolve(PROJECT_DIR, '../target/debug'),
+  ];
+
+  for (const dir of candidateDirs) {
+    const candidate = path.join(dir, binName);
+    if (fs.existsSync(candidate)) {
+      return `"${candidate}"`;
+    }
+  }
+
+  // 3. Fallback to system PATH
+  return 'orcrustrator';
+}
+
   // API Route: Run orcrustrator compile
   if (pathname === '/api/compile' && req.method === 'POST') {
-    exec('orcrustrator compile --diff', { cwd: PROJECT_DIR }, (err, stdout, stderr) => {
+    const bin = findOrcrustratorBinary();
+    const cmd = `${bin} compile --diff`;
+
+    exec(cmd, { cwd: PROJECT_DIR }, (err, stdout, stderr) => {
+      const defPath = path.join(ORCRUSTRATOR_DIR, 'definitions.toml');
+      const layoutPath = path.join(ORCRUSTRATOR_DIR, 'layout.json');
+      const updatedDefinitions = fs.existsSync(defPath) ? fs.readFileSync(defPath, 'utf8') : null;
+      let layout = null;
+      if (fs.existsSync(layoutPath)) {
+        try {
+          layout = JSON.parse(fs.readFileSync(layoutPath, 'utf8'));
+        } catch {
+          layout = null;
+        }
+      }
+
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(
         JSON.stringify({
           success: !err,
           stdout: stdout || '',
-          stderr: stderr || '',
+          stderr: stderr || (err ? err.message : ''),
+          definitions: updatedDefinitions,
+          layout,
         })
       );
     });
@@ -161,6 +253,9 @@ const server = http.createServer((req, res) => {
 const DEFAULT_PORT = parseInt(process.env.PORT, 10) || 4173;
 
 function startServer(port) {
+  const defPath = path.join(ORCRUSTRATOR_DIR, 'definitions.toml');
+  const hasDefs = fs.existsSync(defPath);
+
   server.listen(port, () => {
     const url = `http://localhost:${port}`;
     console.log('\n============================================================');
@@ -168,6 +263,12 @@ function startServer(port) {
     console.log('============================================================');
     console.log(`  Local UI URL : ${url}`);
     console.log(`  Project Path : ${PROJECT_DIR}`);
+    if (hasDefs) {
+      console.log('  Manifest     : Loaded ./orcrustrator/definitions.toml');
+    } else {
+      console.log('  Warning      : No ./orcrustrator/definitions.toml found');
+      console.log('  Action       : Run "orcrustrator compile" to scan relations');
+    }
     console.log('  Mode         : Decoupled Workspace Bridge (Zero Engine Bloat)');
     console.log('============================================================\n');
     console.log('Opening browser... Press Ctrl+C to stop.\n');

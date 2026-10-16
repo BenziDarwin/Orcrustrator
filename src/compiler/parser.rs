@@ -21,17 +21,39 @@ impl RelationVisitor {
 impl<'ast> Visit<'ast> for RelationVisitor {
     fn visit_item_macro(&mut self, node: &'ast ItemMacro) {
         if is_relation_macro(&node.mac) {
-            if let Ok(decl) = parse_relation_macro(&node.mac) {
-                self.declarations.push(decl);
+            match parse_relation_macro(&node.mac) {
+                Ok(decl) => self.declarations.push(decl),
+                Err(e) => eprintln!("Compiler warning: failed to parse relation! item macro: {}", e),
             }
         }
         syn::visit::visit_item_macro(self, node);
     }
 
+    fn visit_expr_macro(&mut self, node: &'ast syn::ExprMacro) {
+        if is_relation_macro(&node.mac) {
+            match parse_relation_macro(&node.mac) {
+                Ok(decl) => self.declarations.push(decl),
+                Err(e) => eprintln!("Compiler warning: failed to parse relation! expr macro: {}", e),
+            }
+        }
+        syn::visit::visit_expr_macro(self, node);
+    }
+
+    fn visit_stmt_macro(&mut self, node: &'ast syn::StmtMacro) {
+        if is_relation_macro(&node.mac) {
+            match parse_relation_macro(&node.mac) {
+                Ok(decl) => self.declarations.push(decl),
+                Err(e) => eprintln!("Compiler warning: failed to parse relation! stmt macro: {}", e),
+            }
+        }
+        syn::visit::visit_stmt_macro(self, node);
+    }
+
     fn visit_macro(&mut self, node: &'ast Macro) {
         if is_relation_macro(node) {
-            if let Ok(decl) = parse_relation_macro(node) {
-                self.declarations.push(decl);
+            match parse_relation_macro(node) {
+                Ok(decl) => self.declarations.push(decl),
+                Err(e) => eprintln!("Compiler warning: failed to parse relation! macro: {}", e),
             }
         }
         syn::visit::visit_macro(self, node);
@@ -175,8 +197,9 @@ fn scan_dir_recursive(dir: &Path, visitor: &mut RelationVisitor) -> Result<()> {
         } else if path.extension().map(|e| e == "rs").unwrap_or(false) {
             let content = fs::read_to_string(&path)
                 .map_err(|e| OrcrustratorError::CompilerError(format!("Could not read file {:?}: {}", path, e)))?;
-            if let Ok(syntax_tree) = syn::parse_file(&content) {
-                visitor.visit_file(&syntax_tree);
+            match syn::parse_file(&content) {
+                Ok(syntax_tree) => visitor.visit_file(&syntax_tree),
+                Err(e) => eprintln!("Compiler warning: syn::parse_file failed on {:?}: {}", path, e),
             }
         }
     }

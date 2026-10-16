@@ -15,13 +15,17 @@ pub fn validate_dag(declarations: &[RelationshipDeclaration]) -> Result<()> {
         all_nodes.insert(decl.source.clone());
         all_nodes.insert(decl.target.clone());
 
-        adj_list
-            .entry(decl.source.clone())
-            .or_default()
-            .push(decl.target.clone());
-
         in_degree.entry(decl.source.clone()).or_insert(0);
-        *in_degree.entry(decl.target.clone()).or_insert(0) += 1;
+        in_degree.entry(decl.target.clone()).or_insert(0);
+
+        if decl.source != decl.target {
+            adj_list
+                .entry(decl.source.clone())
+                .or_default()
+                .push(decl.target.clone());
+
+            *in_degree.entry(decl.target.clone()).or_insert(0) += 1;
+        }
     }
 
     // 2. Collect all nodes with in-degree 0 (roots)
