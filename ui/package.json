@@ -4,6 +4,9 @@
   "description": "Lightweight companion studio for Orcrustrator relational API aggregator",
   "type": "module",
   "license": "MIT OR Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "author": "Benzi Darwin",
   "repository": {
     "type": "git",
