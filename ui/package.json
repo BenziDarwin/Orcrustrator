@@ -1,0 +1,52 @@
+{
+  "name": "orcrustrator-gui",
+  "version": "0.1.1",
+  "description": "Lightweight companion studio for Orcrustrator relational API aggregator",
+  "type": "module",
+  "license": "MIT OR Apache-2.0",
+  "author": "Benzi Darwin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BenziDarwin/Orcrustrator.git",
+    "directory": "ui"
+  },
+  "keywords": [
+    "orcrustrator",
+    "api-aggregator",
+    "dag",
+    "rest",
+    "orchestrator",
+    "gui",
+    "studio"
+  ],
+  "bin": {
+    "orcrustrator-gui": "bin/cli.js"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "start": "node ./bin/cli.js",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.58.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwind-merge": "^3.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "oxlint": "^1.81.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0"
+  }
+}
