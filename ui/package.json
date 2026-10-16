@@ -1,6 +1,6 @@
 {
   "name": "orcrustrator-gui",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Lightweight companion studio for Orcrustrator relational API aggregator",
   "type": "module",
   "license": "MIT OR Apache-2.0",
