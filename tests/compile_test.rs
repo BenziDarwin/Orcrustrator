@@ -134,4 +134,102 @@ mod compile_tests {
         assert_eq!(diff.removed.len(), 0);
         assert!(!diff.is_empty());
     }
+
+    #[test]
+    fn test_infer_relations_from_struct_models() {
+        let dir = tempdir().unwrap();
+        let src_file = dir.path().join("models.rs");
+
+        let code = r#"
+            pub struct TradeItem {
+                pub id: String,
+                pub name: String,
+            }
+
+            pub struct Product {
+                pub product_code: String,
+                pub category_id: String,
+                pub trade_items: Vec<TradeItem>,
+            }
+        "#;
+
+        fs::write(&src_file, code).unwrap();
+
+        let scanned = scan_source_directory(dir.path()).unwrap();
+        assert!(!scanned.is_empty(), "Should automatically infer relations from struct models");
+
+        // Verify HasMany inference
+        let items_rel = scanned.iter().find(|r| r.id == "product_trade_items").expect("Should infer product_trade_items");
+        assert_eq!(items_rel.relation_type, "HasMany");
+        assert_eq!(items_rel.embed_as, "trade_items");
+
+        // Verify HasOne foreign key inference
+        let cat_rel = scanned.iter().find(|r| r.id == "product_category").expect("Should infer product_category");
+        assert_eq!(cat_rel.relation_type, "HasOne");
+        assert_eq!(cat_rel.foreign_key, "category_id");
+        assert_eq!(cat_rel.embed_as, "category");
+    }
+
+    #[test]
+    fn test_infer_relations_from_route_hierarchies() {
+        let dir = tempdir().unwrap();
+        let src_file = dir.path().join("routes.rs");
+
+        let code = r#"
+            pub fn setup_routes() {
+                let base = "/api/v1/facilities";
+                let wards = "/api/v1/facilities/{facility_code}/wards";
+                println!("Routes: {} and {}", base, wards);
+            }
+        "#;
+
+        fs::write(&src_file, code).unwrap();
+
+        let scanned = scan_source_directory(dir.path()).unwrap();
+        assert!(!scanned.is_empty(), "Should automatically infer relations from route strings");
+
+        // Verify child relation inference from path prefix
+        let wards_rel = scanned.iter().find(|r| r.id == "facilities_wards").expect("Should infer facilities_wards relation");
+        assert_eq!(wards_rel.source, "/api/v1/facilities");
+        assert_eq!(wards_rel.target, "/api/v1/facilities/{facility_code}/wards");
+        assert_eq!(wards_rel.relation_type, "HasMany");
+        assert_eq!(wards_rel.foreign_key, "facility_code");
+        assert_eq!(wards_rel.embed_as, "wards");
+
+        // Verify Root relation was generated for the parent
+        let root_rel = scanned.iter().find(|r| r.id == "facilities_root").expect("Should infer facilities_root");
+        assert_eq!(root_rel.relation_type, "Root");
+        assert_eq!(root_rel.source, "/api/v1/facilities");
+    }
+
+    #[test]
+    fn test_infer_relations_from_struct_field_attributes() {
+        let dir = tempdir().unwrap();
+        let src_file = dir.path().join("annotated_models.rs");
+
+        let code = r#"
+            pub struct MedicalProduct {
+                pub id: String,
+                #[relation(has_one, target = "/api/v1/categories/{category_id}", fk = "category_id")]
+                pub category_id: String,
+                #[relation(has_many, target = "/api/v1/products/{product_code}/trade_items", embed_as = "trade_items")]
+                pub trade_items: Vec<String>,
+            }
+        "#;
+
+        fs::write(&src_file, code).unwrap();
+
+        let scanned = scan_source_directory(dir.path()).unwrap();
+        assert_eq!(scanned.len(), 3, "Expected 1 root and 2 field relations");
+
+        let cat_rel = scanned.iter().find(|r| r.id == "medical_product_category_id").unwrap();
+        assert_eq!(cat_rel.relation_type, "HasOne");
+        assert_eq!(cat_rel.target, "/api/v1/categories/{category_id}");
+        assert_eq!(cat_rel.foreign_key, "category_id");
+
+        let items_rel = scanned.iter().find(|r| r.id == "medical_product_trade_items").unwrap();
+        assert_eq!(items_rel.relation_type, "HasMany");
+        assert_eq!(items_rel.target, "/api/v1/products/{product_code}/trade_items");
+        assert_eq!(items_rel.embed_as, "trade_items");
+    }
 }

@@ -126,9 +126,21 @@ async fn main() -> Result<()> {
                 let src_path = Path::new(&source_dir);
                 let manifest_path = Path::new(&manifest);
 
-                println!("Scanning {:?} for relation! declarations...", src_path);
+                println!("Scanning {:?} for relation declarations and API patterns...", src_path);
                 let declared_relations = scan_source_directory(src_path)?;
                 println!("Discovered {} unique relation declarations.", declared_relations.len());
+
+                // Preserve existing manifest if 0 relations were found in code
+                if declared_relations.is_empty() && manifest_path.exists() {
+                    if let Ok(existing_manifest) = DefinitionsManifest::load_from_file(manifest_path) {
+                        if !existing_manifest.relations.is_empty() {
+                            println!("Preserving {} existing relations in {:?}.", existing_manifest.relations.len(), manifest_path);
+                            validate_dag(&existing_manifest.relations)?;
+                            println!("Graph validation passed: 0 circular dependencies detected.");
+                            return Ok(());
+                        }
+                    }
+                }
 
                 // Validate graph cycle freedom
                 validate_dag(&declared_relations)?;

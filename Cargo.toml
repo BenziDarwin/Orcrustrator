@@ -1,6 +1,6 @@
 [package]
 name = "orcrustrator"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 authors = ["Orcrustrator Contributors"]
 description = "A pure, high-performance API aggregator and relational orchestrator with multi-auth, schema inspection, and OOP data modeling."

@@ -704,7 +704,7 @@ gui_note = "${n.operatorNote || 'Operator override'}"`
           </div>
           <div className="product-title">
             Orcrustrator
-            <span className="product-badge">v0.2.0</span>
+            <span className="product-badge">v0.2.1</span>
           </div>
 
           <nav className="nav-tabs">
